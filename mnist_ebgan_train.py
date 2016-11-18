@@ -37,7 +37,7 @@ stride=2
 strides = [1,stride,stride,1]
 
 
-with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True):
+with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True, bias=False):
     g_p1 = (z.sg_dense(dim=1024)
            .sg_dense(dim=7*7*128)
            .sg_reshape(shape=(-1, 7, 7, 128)))
@@ -52,7 +52,7 @@ with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True):
 # create real + fake image input
 xx = tf.concat(0, [x, gen])
 
-with tf.sg_context(name='discriminator', size=4, stride=2, act='leaky_relu'):
+with tf.sg_context(name='discriminator', size=4, stride=2, act='leaky_relu', bias=False):
     d_p1 = ops.conv_and_scale(xx, dim=64, size=size, stride=stride,act='leaky_relu', bn=False)
     d_p2 = ops.conv_and_scale(d_p1, dim=128, size=size, stride=stride,act='leaky_relu', bn=False)
     d_p3 = ops.upconv_and_scale(d_p2, dim=64, size=size, stride=stride,act='leaky_relu', bn=False)
