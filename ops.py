@@ -4,6 +4,7 @@ import numpy as np
 # sg_act = tf.sg_activation
 from sugartensor import sg_initializer as init
 from sugartensor import sg_activation as sg_act
+import matplotlib.pyplot as plt
 
 def get_sg_act(act_name):
   return getattr(sg_act, 'sg_' + act_name.lower())
@@ -31,28 +32,30 @@ def make_scaling_matrix_for_conv_transpose(input_shape, filter_shape, output_sha
 # Why don't I want to do my own conv? It's mainly for logging purposes...
 # Because his variables log and initialize well. I really don't want to give that up.
 
-def conv_and_scale(tensor, dim, size, stride, act, bn=False):
+def conv_and_scale(tensor, dim, size, stride, act, bn=False, bias=None):
   # size is Kernal Size.
   # I wonder if opt passes down. Anyways...
   in_shape = [int(d) for d in tensor.get_shape()]
   filter_shape = [size, size, in_shape[-1], dim]
   strides = [1, stride, stride, 1]
 
-  conv = tensor.sg_conv(size=size, dim=dim, stride=stride, act='linear', bn=bn) #linear at first
+  conv = tensor.sg_conv(size=size, dim=dim, stride=stride, act='linear', bn=False, bias=False) #linear at first
   scaler = make_scaling_matrix_for_conv(in_shape, filter_shape, strides)
   scaled_conv = tf.mul(conv, scaler)
+  scaled_with_options = scaled_conv.sg_bypass(act=act, bn=bn, bias=bias)
+  return scaled_with_options
 
   # if bn:
   #   b = init.constant('b', dim)
   # scaled_conv = scaled_conv + (b if bn else 0)
 
-  act_fun = get_sg_act(act)
-  print('act_fun: {}'.format(act_fun))
-  out = act_fun(scaled_conv)
-  return out
+  # act_fun = get_sg_act(act)
+  # print('act_fun: {}'.format(act_fun))
+  # out = act_fun(scaled_conv)
+  # return out
 
 
-def upconv_and_scale(tensor, dim, size, stride, act, bn=False):
+def upconv_and_scale(tensor, dim, size, stride, act, bn=False, bias=None):
   # size is Kernal Size.
   # I wonder if opt passes down. Anyways...
   in_shape = [int(d) for d in tensor.get_shape()]
@@ -69,18 +72,40 @@ def upconv_and_scale(tensor, dim, size, stride, act, bn=False):
   scaler = make_scaling_matrix_for_conv_transpose(in_shape, filter_shape, out_shape, strides)
   print('scaler_shape is {}'.format(scaler.get_shape()))
   scaled_upconv = tf.mul(upconv, scaler)
+  scaled_with_options = scaled_upconv.sg_bypass(act=act, bn=bn, bias=bias)
+  return scaled_with_options
 
   # if bn:
   #   b = init.constant('b', dim)
   # scaled_upconv = scaled_upconv + (b if bn else 0)
 
-  act_fun = get_sg_act(act)
-  print('act_fun: {}'.format(act_fun))
-  out = act_fun(scaled_upconv) #BN HAPPENS HERE.
-  return out
+  # act_fun = get_sg_act(act)
+  # print('act_fun: {}'.format(act_fun))
+  # out = act_fun(scaled_upconv) #BN HAPPENS HERE.
+  # return out
+
+def get_next_filename():
+  i = 0
+  while True:
+    num_str = str(i).zfill(4)
+    filename = 'sample{}.png'.format(num_str)
+    filename = os.path.join(asset_folder, filename)
+    if not os.path.isfile(filename):
+      print('next filename: {}'.format(filename))
+      return filename
+    i += 1
 
 
-
+def plot_images(imgs):
+  # plot result
+  _, ax = plt.subplots(10, 10, sharex=True, sharey=True)
+  for i in range(10):
+      for j in range(10):
+          ax[i][j].imshow(imgs[i * 10 + j], 'gray')
+          ax[i][j].set_axis_off()
+  plt.savefig(get_next_filename(), dpi=600)
+  tf.sg_info('Sample image saved to "asset/train/sample.png"')
+  plt.close()
 
 
 

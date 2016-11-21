@@ -45,6 +45,14 @@ with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True, bias
     g_p3 = ops.upconv_and_scale(g_p2, dim=1, size=size, stride=stride, act='sigmoid',bn=False)
     gen = g_p3
 
+with tf.Session() as sess:
+  init = tf.initialize_all_variables()
+  sess.run(init)
+  imgs = sess.run(gen)
+  ops.plot_images()
+print('plotted')
+exit()
+
 #
 # create discriminator
 #

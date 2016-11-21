@@ -25,7 +25,7 @@ strides = [1,stride,stride,1]
 # random uniform seed
 z = tf.random_uniform((batch_size, z_dim))
 
-with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True):
+with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True, bias=False):
     g_p1 = (z.sg_dense(dim=1024)
            .sg_dense(dim=7*7*128)
            .sg_reshape(shape=(-1, 7, 7, 128)))
@@ -54,8 +54,12 @@ def get_next_filename():
 with tf.Session() as sess:
     tf.sg_init(sess)
     # restore parameters
-    saver = tf.train.Saver()
-    saver.restore(sess, tf.train.latest_checkpoint('asset/train/ckpt'))
+    try:
+      saver = tf.train.Saver()
+      saver.restore(sess, tf.train.latest_checkpoint('asset/train/ckpt'))
+    except Exception as e:
+      print('No saved file...')
+
 
     # run generator
     imgs = sess.run(gen)
