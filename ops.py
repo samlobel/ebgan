@@ -5,6 +5,7 @@ import numpy as np
 from sugartensor import sg_initializer as init
 from sugartensor import sg_activation as sg_act
 import matplotlib.pyplot as plt
+import os
 
 def get_sg_act(act_name):
   return getattr(sg_act, 'sg_' + act_name.lower())
@@ -66,7 +67,7 @@ def upconv_and_scale(tensor, dim, size, stride, act, bn=False, bias=None):
   print('out_shape for upconv: {}'.format(out_shape))
   strides = [1, stride, stride, 1]
 
-  upconv = tensor.sg_upconv(size=size, dim=dim, stride=stride, act='linear', bn=bn) #linear at first
+  upconv = tensor.sg_upconv(size=size, dim=dim, stride=stride, act='linear', bn=bn, bias=False) #linear at first
   # Actually, batch normalization makes no difference here... Because it works on channels and not pixels
   print('upconv_shape is {}'.format(upconv.get_shape()))
   scaler = make_scaling_matrix_for_conv_transpose(in_shape, filter_shape, out_shape, strides)
@@ -83,7 +84,7 @@ def upconv_and_scale(tensor, dim, size, stride, act, bn=False, bias=None):
   # print('act_fun: {}'.format(act_fun))
   # out = act_fun(scaled_upconv) #BN HAPPENS HERE.
   # return out
-
+asset_folder = 'asset/train/'
 def get_next_filename():
   i = 0
   while True:

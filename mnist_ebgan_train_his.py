@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import sugartensor as tf
 import numpy as np
-import ops
 
 # set log level to debug
 tf.sg_verbosity(10)
@@ -32,26 +31,14 @@ x = data.train.image
 # random uniform seed
 z = tf.random_uniform((batch_size, z_dim))
 
-size=4
-stride=2
-strides = [1,stride,stride,1]
+with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True):
 
-
-with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True, bias=False):
-    g_p1 = (z.sg_dense(dim=1024)
+    # generator network
+    gen = (z.sg_dense(dim=1024)
            .sg_dense(dim=7*7*128)
-           .sg_reshape(shape=(-1, 7, 7, 128)))
-    g_p2 = ops.upconv_and_scale(g_p1, dim=64, size=size, stride=stride,act='relu',bn=True)
-    g_p3 = ops.upconv_and_scale(g_p2, dim=1, size=size, stride=stride, act='sigmoid',bn=False)
-    gen = g_p3
-
-# with tf.Session() as sess:
-#   init = tf.initialize_all_variables()
-#   sess.run(init)
-#   imgs = sess.run(gen)
-#   ops.plot_images()
-# print('plotted')
-# exit()
+           .sg_reshape(shape=(-1, 7, 7, 128))
+           .sg_upconv(dim=64)
+           .sg_upconv(dim=1, act='sigmoid', bn=False))
 
 #
 # create discriminator
@@ -60,12 +47,11 @@ with tf.sg_context(name='generator', size=4, stride=2, act='relu', bn=True, bias
 # create real + fake image input
 xx = tf.concat(0, [x, gen])
 
-with tf.sg_context(name='discriminator', size=4, stride=2, act='leaky_relu', bias=False):
-    d_p1 = ops.conv_and_scale(xx, dim=64, size=size, stride=stride,act='leaky_relu', bn=False)
-    d_p2 = ops.conv_and_scale(d_p1, dim=128, size=size, stride=stride,act='leaky_relu', bn=False)
-    d_p3 = ops.upconv_and_scale(d_p2, dim=64, size=size, stride=stride,act='leaky_relu', bn=False)
-    d_p4 = ops.upconv_and_scale(d_p3, dim=1, size=size, stride=stride, act='linear', bn=False)
-    disc = d_p4
+with tf.sg_context(name='discriminator', size=4, stride=2, act='leaky_relu'):
+    disc = (xx.sg_conv(dim=64)
+            .sg_conv(dim=128)
+            .sg_upconv(dim=64)
+            .sg_upconv(dim=1, act='linear'))
 
 #
 # pull-away term ( PT ) regularizer
@@ -114,6 +100,4 @@ def alt_train(sess, opt):
     return np.mean(l_disc) + np.mean(l_gen)
 
 # do training
-small_num_batches = data.train.num_batch
-alt_train(log_interval=10, max_ep=1, ep_size=small_num_batches//100, early_stop=False)
-
+alt_train(log_interval=10, max_ep=2, ep_size=data.train.num_batch // 100, early_stop=False)

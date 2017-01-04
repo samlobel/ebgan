@@ -10,7 +10,7 @@ tf.sg_verbosity(10)
 # hyper parameters
 #
 
-batch_size = 100
+batch_size = 32
 z_dim = 50
 
 
@@ -56,19 +56,21 @@ with tf.Session() as sess:
     # restore parameters
     try:
       saver = tf.train.Saver()
-      saver.restore(sess, tf.train.latest_checkpoint('asset/train/ckpt'))
+      saver.restore(sess, tf.train.latest_checkpoint('./asset/train/ckpt'))
     except Exception as e:
-      print('No saved file...')
+      print('No saved file...: {}'.format(e))
 
 
     # run generator
     imgs = sess.run(gen)
+    num_imgs = imgs.shape[0]
+    num_per_side = int(num_imgs**0.5)
 
     # plot result
-    _, ax = plt.subplots(10, 10, sharex=True, sharey=True)
-    for i in range(10):
-        for j in range(10):
-            ax[i][j].imshow(imgs[i * 10 + j], 'gray')
+    _, ax = plt.subplots(num_per_side, num_per_side, sharex=True, sharey=True)
+    for i in range(num_per_side):
+        for j in range(num_per_side):
+            ax[i][j].imshow(imgs[i * num_per_side + j], 'gray')
             ax[i][j].set_axis_off()
     plt.savefig(get_next_filename(), dpi=600)
     tf.sg_info('Sample image saved to "asset/train/sample.png"')
